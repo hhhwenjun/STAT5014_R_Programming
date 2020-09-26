@@ -1,0 +1,255 @@
+---
+title: "HW2_hwenjun"
+author: "Wenjun Han"
+date: "9/25/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+library(vioplot)
+```
+
+  
+## Problem 3
+
+In the lecture, there were two links to programming style guides.  What is your takeaway from this and what specifically are _you_ going to do to improve your coding style?  
+
+It is very important to have a good habit in providing neat and readable codes, not only for keeping coding history but also help others to understand what we are doing for the data. It is necessary to fully understand the rules and technics for providing easy-understandable codes, such as naming, assignment direction, explicit expression, indent, qualifying namespaces. For me, I will practice more and read more codes to improve my sense of coding.
+
+## Problem 5
+
+```{r import device review data,include=TRUE, cache=FALSE}
+
+# read into R
+device <- data.frame(readRDS("HW3_data.RDS"))
+```
+
+Design a single function that can return a vector containing the requirements.
+
+```{r device_function, include=TRUE,cache=FALSE}
+device_stat <- function(x=c(1:10),y=c(1:10)){
+  # function to calculate mean, std, correlation between two vectors
+  x_mean <- mean(x)
+  y_mean <- mean(y)
+  
+  x_std <- sd(x)
+  y_std <- sd(y)
+  
+  corr <- cor(x,y)
+  
+  mean <- c(x_mean, y_mean)
+  std <- c(x_std, y_std)
+  
+  result_table <- data.frame(mean, std, corr, rol.names = c("dev1","dev2"))
+  # Return all the statistics that we calculate
+  return(result_table)
+}
+```
+
+Then we use the function to run our data.
+```{r device stat data, include=TRUE,cache=FALSE}
+newdf <- c()
+for(i in 1:13){
+  observer_num <-device[142*i-141,1]
+  observer_chunk <-device[(142*i-141):(142*i),]
+  
+  review_stat <- device_stat(observer_chunk[,2],observer_chunk[,3])
+  review_data <- cbind(observer_num,review_stat)
+  newdf <- rbind(newdf,review_data)
+}
+newdf
+```
+
+a. A single table of the means, sd, and correlation for each of the 13 Observers is created. From this table, we can conclude that the mean and std of observers look similar. The correlation between two devices is about -0.066, indicating they approximately have no relationship. 
+
+b. A box plot of dev, by Observer is created as below.  
+```{r device boxplot, include=TRUE,cache=FALSE}
+
+boxplot(device$dev1~device$Observer, xlab="Observer",ylab="Observer Review", 
+        main="Device comparison boxplot-Dev1")
+
+boxplot(device$dev2~device$Observer, xlab="Observer",ylab="Observer Review", 
+        main="Device comparison boxplot-Dev2")
+```
+From these plots, we can learn that the range of reviews for dev2 is larger than dev1. The observers tend to provide consistent reviews to dev1.
+
+c. Violin plots of dev by Observer.   
+```{r device violin plot, include=TRUE,cache=FALSE}
+
+o1_dev1 <- device$dev1[device$Observer==1]; o1_dev2 <- device$dev2[device$Observer==1]
+o2_dev1 <- device$dev1[device$Observer==2]; o2_dev2 <- device$dev2[device$Observer==2]
+o3_dev1 <- device$dev1[device$Observer==3]; o3_dev2 <- device$dev2[device$Observer==3]
+o4_dev1 <- device$dev1[device$Observer==4]; o4_dev2 <- device$dev2[device$Observer==4]
+o5_dev1 <- device$dev1[device$Observer==5]; o5_dev2 <- device$dev2[device$Observer==5]
+o6_dev1 <- device$dev1[device$Observer==6]; o6_dev2 <- device$dev2[device$Observer==6]
+o7_dev1 <- device$dev1[device$Observer==7]; o7_dev2 <- device$dev2[device$Observer==7]
+o8_dev1 <- device$dev1[device$Observer==8]; o8_dev2 <- device$dev2[device$Observer==8]
+o9_dev1 <- device$dev1[device$Observer==9]; o9_dev2 <- device$dev2[device$Observer==9]
+o10_dev1 <- device$dev1[device$Observer==10]; o10_dev2 <- device$dev2[device$Observer==10]
+o11_dev1 <- device$dev1[device$Observer==11]; o11_dev2 <- device$dev2[device$Observer==11]
+o12_dev1 <- device$dev1[device$Observer==12]; o12_dev2 <- device$dev2[device$Observer==12]
+o13_dev1 <- device$dev1[device$Observer==13]; o13_dev2 <- device$dev2[device$Observer==13]
+
+vioplot(o1_dev1, o2_dev1,o3_dev1,o4_dev1,o5_dev1,
+        o6_dev1,o7_dev1,o8_dev1,o9_dev1,o10_dev1,
+        o11_dev1,o12_dev1,o13_dev1, col="gold",xlab = "Observer")
+title("Violin Plots of Reviews on DEV1")
+
+vioplot(o1_dev2, o2_dev2,o3_dev2,o4_dev2,o5_dev2,
+        o6_dev2,o7_dev2,o8_dev2,o9_dev2,o10_dev2,
+        o11_dev2,o12_dev2,o13_dev2, col="green",xlab = "Observer")
+title("Violin Plots of Reviews on DEV2")
+
+
+```
+From these plots, we also can conclude the similar results as in previous questions. The reviews in Dev1 is more concentrated. But comparing to boxplot, it can directly shows the distribution of the data, which gives us more information about the data distribution. The vioplot also prove the result of the summary statistics, we can clearly see why the standard deviation of Dev2 is larger than Dev1.
+
+d. a scatter plot of the data using ggplot, geom_points, and add facet_wrap on Observer.
+```{r device scatterplot, include=TRUE,cache=FALSE}
+library(ggplot2)
+ggplot(device, aes(x=dev1,y=dev2)) + geom_point() + facet_wrap(Observer~.)
+```
+The review points of Dev1 and Dev2 are actually related and they can be plot as some cute figures. Before we do the analysis, we should plot the scatterplot and see the data first. We need to all the basic visualizations in the "Exploratory Data Analysis" process.
+
+## Problem 6 
+
+Create a function that uses Reimann sums to approximate the integral:
+
+\begin{equation*}
+f(x) = \int_0^1 e^{-\frac{x^2}{2}}
+\end{equation*}
+
+```{r integration, include=TRUE,cache=FALSE}
+# Use Reimann sums for equation integration, calculate the area under curve
+# First we specify the curve function
+curv_func <- function(x=1){
+  y <- exp(-x^2/2)
+  return(y)
+}
+
+# We build up a function to achieve the goal
+area_under<-function(wid = 0.1){
+  x <-seq(0,1,wid)
+  s <- c()
+  for(i in 1:length(x)){
+    s[i] <- curv_func(x[i])*wid
+  }
+  
+  area <- sum(s)
+  return(area)
+}
+
+```
+
+Since we need to compare the result with analytical solution, so we need to have an analytical solution for the area under the curve.
+```{r analytical solution, include=TRUE,cache=FALSE}
+# We can easily find the the curve fucntion can be 
+#part of the normal distribution function with mean=0, sigma=1
+true_s <- sqrt(2*pi)*(pnorm(1)-pnorm(0))
+```
+
+The function should include as an argument the width of the slices used.Now use a looping construct (for or while) to loop through possible slice widths.
+```{r compare solutions, include=TRUE,cache=FALSE}
+# We can build up table to compare their result, and limit the error of Riemann into 1e-6
+wid <- c(0.1,0.05,0.01,10^-3,10^-4,10^-5,10^-6,10^-7)
+
+for(i in 1:8){
+  area_riemann <- area_under(wid[i])
+  error_riemann <- abs(true_s - area_riemann)
+  
+  result <- c("Width:",wid[i],"Riemann Area:", area_riemann, "Error:",error_riemann)
+  print(result)
+}
+```
+
+The slice width necessary to obtain an answer within $1e^{-6}$ of the analytical solution is $1e^{-6}$.
+
+## Problem 7
+
+Create a function to find solutions to (1) using Newton's method.  
+\begin{equation}
+f(x) = 3^x - sin(x) + cos(5x)
+\end{equation}
+
+```{r function and derivative, include=TRUE,cache=FALSE}
+# We input the function 
+
+fx <- function(x=1){
+  f <- 3^x-sin(x)+cos(5*x)
+  return(f)
+}
+
+# find its derivative
+dr <- function(x=1){
+  d <- (3^x)*log(3, base = exp(1)) - cos(x) - 5*sin(5*x)
+}
+
+```
+
+Then we build up newton function as an algorithm.
+```{r newton method, include=TRUE,cache=FALSE}
+
+newton <- function(interval=c(0,5),tolerance=1){
+  # Find out the interval range and midpoint
+  up_bound <- min(interval)
+  low_bound <- max(interval)
+  mid <- (up_bound + low_bound)/2
+  plot(mid,fx(mid))
+  m <- mid
+
+
+  # perform newton method
+  while(abs(fx(m))>tolerance){
+    
+    new_point <- m - (fx(m)/dr(m))
+    m <- new_point
+    points(m, fx(m))
+    
+  }
+
+  return(m)
+}
+
+# Let's assume the interval is (-12,5), tolerance is 0.005
+newton(c(-12,5),0.005)
+
+```
+
+## Problem 8
+
+In most of your classes, you will be concerned with "sums of squares" of various flavors.  SST = SSR + SSE for instance.  Sums of square total (SST) = sums of square regression (SSR) + sums of square error (SSE).  In this problem, we want to compare use of a for loop to using matrix operations in calculating these sums of squares.  We will use data simulated using:
+
+```{r sim_data, eval=FALSE, echo=TRUE, include=TRUE}
+X <- cbind(rep(1,100),rep.int(1:10,time=10))
+beta <- c(4,5)
+y <- X%*%beta + rnorm(100)
+```
+
+Without going too far into the Linear Regression material, we want to calculate SST = $$\Sigma_{i=1}^{100} (y_i - \bar{y})^2$$
+
+Please calculate this using:
+
+a. accumulating values in a for loop  
+```{r sim_data for loop, eval=FALSE, echo=TRUE, include=TRUE}
+y_mean <- mean(y)
+SST <- 0
+for(i in 1:100){
+  SST[i] <- (y[i] - y_mean)^2
+}
+print(sum(SST))
+```
+
+b. matrix operations only
+```{r sim_data matrix operations, eval=FALSE, echo=TRUE, include=TRUE}
+y_mean <- mean(y)
+
+SST <- (t(y)-y_mean)%*%(y-y_mean)
+print(SST)
+```
+Final number is the same for two methods, but the speed of matrix operations is faster than accumulating values in a for loop.
+
+
+
+
