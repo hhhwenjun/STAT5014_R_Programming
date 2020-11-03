@@ -1,0 +1,187 @@
+---
+title: "HW5_hwenjun"
+author: "Wenjun Han"
+date: "10/29/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyr)
+```
+
+## Problem 3
+
+Get and clean the following data on education from the World Bank. 
+```{r clean data}
+# Read the csv data from the dovwloaded csv files
+edstat_raw <- read.csv(file = 'EdStatsData.csv')
+
+# Clean the data through tidyverse
+# First we restack the data into a right format
+edstat <-edstat_raw %>%
+                      gather(key = "Time",value = "value", X1970:X2100)
+# We found that the data has an X variable which not exist in orginal data
+edstat = subset(edstat, select = -X)
+
+#Change name of the variables
+names(edstat)[1] <- "Country.Name"
+head(edstat)
+
+# Since we found that there are many missing data
+# We remove the missing data from our table
+edstat <- drop_na(edstat)
+head(edstat)
+dim(edstat)
+```
+
+There are 57650450 data points in complete dataset, and 5082201 data points we have in cleaned dataset. We chose country Australia
+and Hungary. 
+
+```{r Summary table of indicators}
+# Choose country Australia and Hungary
+library(dplyr)
+aus <- edstat[edstat$Country.Name == "Australia",]
+head(aus)
+hun <- edstat[edstat$Country.Name == "Hungary",]
+head(hun)
+
+# Create a summary table of indicators for comparison
+summary(aus)
+summary(hun)
+by_aus <- aus %>% group_by(Indicator.Code) %>% summarise(mean = mean(value), n = n())
+head(by_aus)
+by_hun <- hun %>% group_by(Indicator.Code) %>% summarise(mean = mean(value), n = n())
+head(by_hun)
+```
+
+The summary of indicators of Australia data and Hungary data is shown as above tables.
+
+
+## Problem 4
+
+Using base plotting functions to create a single figure as similar to the example. Use simple linear regression method for plotting data.
+
+```{r base plot}
+library(MASS)
+library(faraway)
+library(olsrr)
+library(sur)
+
+# Plot country Australia
+# Fit data with linear regression model
+lmfit_aus <- lm(aus$value~aus$Indicator.Code)
+
+# Plot 1
+par(mfcol=c(2,3))
+plot(fitted(lmfit_aus),residuals(lmfit_aus),xlab = "Predicted Value",ylab = "Residuals")
+abline(h=0)
+
+# Plot 2
+plot(fitted(lmfit_aus),studres(lmfit_aus),xlab = "Predicted Value",ylab = "Rstudent")
+
+# Plot 3
+plot(leverage(lmfit_aus),studres(lmfit_aus),xlab = "Leverage",ylab = "Rstudent")
+
+# Plot 4
+qqnorm(residuals(lmfit_aus),ylab = "Residuals")
+
+# Plot 5
+plot(fitted(lmfit_aus),weighted.residuals(lmfit_aus, drop0 = TRUE),xlab = "Predicted Value",ylab = "Weight")
+
+# Plot 6
+plot(cooks.distance(lmfit_aus),xlab = "Observation",ylab = "Cook's D")
+
+
+# Plot country Hungary
+lmfit_hun <- lm(hun$value~hun$Indicator.Code)
+
+par(mfcol=c(2,3))
+plot(fitted(lmfit_hun),residuals(lmfit_hun),xlab = "Predicted Value",ylab = "Residuals")
+abline(h=0)
+
+# Plot 2
+plot(fitted(lmfit_hun),studres(lmfit_hun),xlab = "Predicted Value",ylab = "Rstudent")
+
+# Plot 3
+plot(leverage(lmfit_hun),studres(lmfit_hun),xlab = "Leverage",ylab = "Rstudent")
+
+# Plot 4
+qqnorm(residuals(lmfit_hun),ylab = "Residuals")
+
+# Plot 5
+plot(fitted(lmfit_hun),weighted.residuals(lmfit_hun, drop0 = TRUE),xlab = "Predicted Value",ylab = "Weight")
+
+# Plot 6
+plot(cooks.distance(lmfit_hun),xlab = "Observation",ylab = "Cook's D")
+
+```
+
+## Problem 5
+
+Recreate the plot in the last problem using ggplot2 functions.
+
+```{r gg plot}
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+
+# Plot country Australia
+
+# Plot 1
+
+lmfit_ausf <- fortify(lmfit_aus)
+a1 <- ggplot(lmfit_ausf, aes(x = .fitted, y = .resid)) + geom_point()
+
+# Plot 2
+b1 <- ggplot(lmfit_ausf, aes(x = .fitted, y = .stdresid)) + geom_point()
+
+# Plot 3
+c1 <- ggplot(lmfit_ausf, aes(x = leverage(lmfit_aus), y = .stdresid)) + geom_point()
+
+# Plot 4
+d1 <- ggplot(lmfit_ausf, aes(sample=.resid))+stat_qq()
+
+# Plot 5
+e1 <- ggplot(lmfit_ausf, aes(x = .fitted, y = weighted.residuals(lmfit_aus, drop0 = TRUE))) + geom_point()
+
+# Plot 6
+f1 <- ggplot(lmfit_ausf, aes(x= c(1:28083), y=.cooksd)) + geom_point()
+
+ggarrange(a1, b1, c1, d1, e1, f1,
+          ncol = 3, nrow = 2)
+
+
+
+# Plot country Hungary
+lmfit_hunf <- fortify(lmfit_hun)
+a2 <- ggplot(lmfit_hunf, aes(x = .fitted, y = .resid)) + geom_point()
+
+# Plot 2
+b2 <- ggplot(lmfit_hunf, aes(x = .fitted, y = .stdresid)) + geom_point()
+
+# Plot 3
+c2 <- ggplot(lmfit_hunf, aes(x = leverage(lmfit_hun), y = .stdresid)) + geom_point()
+
+# Plot 4
+d2 <- ggplot(lmfit_hunf, aes(sample=.resid))+stat_qq()
+
+# Plot 5
+e2 <- ggplot(lmfit_hunf, aes(x = .fitted, y = weighted.residuals(lmfit_hun, drop0 = TRUE))) + geom_point()
+
+# Plot 6
+f2 <- ggplot(lmfit_hunf, aes(x= c(1:33046), y=.cooksd)) + geom_point()
+
+ggarrange(a2, b2, c2, d2, e2, f2,
+          ncol = 3, nrow = 2)
+
+```
+
+
+
+
+
+
+
+
+
